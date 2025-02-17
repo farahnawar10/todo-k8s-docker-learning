@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: todolist-headless-service
+  labels:
+    app: todolist
+spec:
+  clusterIP: None  # Headless service
+  ports:
+  - port: 80
+    targetPort: 3000
+  selector:
+    app: todolist
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: todolist-statefulset
+  labels:
+    app: todolist
+spec:
+  serviceName: "todolist-headless-service"  
+  replicas: 2  
+  selector:
+    matchLabels:
+      app: todolist
+  template:
+    metadata:
+      labels:
+        app: todolist
+    spec:
+      containers:
+      - name: todolist-container
+        image: todolist:newest
+        resources:
+          requests:
+            memory: "3Gi"
+          limits:
+            memory: "3Gi"  
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+        - name: data
+          mountPath: /data  
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi  # Storage size
